@@ -1,0 +1,79 @@
+name: Bootstrap Vinext benchmark
+
+on:
+  push:
+    branches:
+      - bench/vinext
+    paths:
+      - .github/workflows/bootstrap-vinext.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    env:
+      CI: "true"
+      NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY: pk_test_benchmark
+      NEXT_PUBLIC_MEDUSA_BACKEND_URL: https://example.invalid
+      NEXT_PUBLIC_DEFAULT_REGION: us
+      NEXT_PUBLIC_BASE_URL: https://example.invalid
+    steps:
+      - name: Check out benchmark branch
+        uses: actions/checkout@v4
+        with:
+          ref: bench/vinext
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.11.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: pnpm
+
+      - name: Install existing dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Initialize Vinext for Cloudflare Workers
+        working-directory: apps/storefront
+        run: |
+          pnpm dlx vinext init --platform=cloudflare --name=dtc-bench-vinext --cdn-cache=none --data-cache=none --image-optimization=none --port=8000 --skip-check
+
+      - name: Preserve CommonJS Next configuration in ESM package
+        run: |
+          set -eu
+          cd apps/storefront
+          if [ -f next.config.js ]; then mv next.config.js next.config.cjs; fi
+          if [ -f check-env-variables.js ]; then mv check-env-variables.js check-env-variables.cjs; fi
+          if [ -f next.config.cjs ]; then
+            sed -i 's|require("./check-env-variables")|require("./check-env-variables.cjs")|' next.config.cjs
+          fi
+
+      - name: Ignore generated build output
+        run: |
+          cat >> apps/storefront/.gitignore <<'EOF'
+
+          # Vinext and Cloudflare generated build output
+          .cloudflare/
+          .vinext/
+          dist/
+          EOF
+
+      - name: Commit generated Vinext source and lockfile
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A apps/storefront pnpm-lock.yaml pnpm-workspace.yaml
+          if ! git diff --cached --quiet; then
+            git commit -m "Initialize Vinext Cloudflare benchmark"
+            git push origin HEAD:bench/vinext
+          fi
+
+      - name: Build Vinext storefront
+        run: pnpm --filter @dtc/storefront run build:vinext
