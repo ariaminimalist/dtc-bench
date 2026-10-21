@@ -1,0 +1,8 @@
+/dist/
+.vinext/
+.cloudflare/
+
+# Vinext and Cloudflare generated build output
+.cloudflare/
+.vinext/
+dist/
