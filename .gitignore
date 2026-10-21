@@ -55,3 +55,10 @@ yarn-error.log*
 ehthumbs.db
 Thumbs.db
 **/.DS_Store
+ 
+# Cloudflare OpenNext build and runtime output
+**/.open-next/
+**/.wrangler/
+**/.dev.vars*
+!**/.dev.vars.example
+**/cloudflare-env.d.ts
