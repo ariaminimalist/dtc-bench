@@ -1,11 +1,14 @@
 import { bindings, defineConfig, defineWorker } from "cf/config";
 
+// Keep dashboard runtime variables and the custom domain represented here.
+// cf deploy treats this file as the source of truth in non-interactive builds.
 export default defineConfig({
   worker: defineWorker({
     name: "dtc-bench-vinext",
     entrypoint: "vinext/server/fetch-handler",
     compatibilityDate: "2026-10-21",
     compatibilityFlags: ["nodejs_compat"],
+    domains: ["vinext.glam.pp.ua"],
     assets: {
       htmlHandling: "none",
       notFoundHandling: "none",
@@ -13,6 +16,9 @@ export default defineConfig({
     },
     env: {
       ASSETS: bindings.assets(),
+      NEXT_PUBLIC_BASE_URL: bindings.text("https://vinext.glam.pp.ua"),
+      NEXT_PUBLIC_DEFAULT_REGION: bindings.text("us"),
+      NEXT_PUBLIC_MEDUSA_BACKEND_URL: bindings.text("https://api.glam.pp.ua"),
     },
   }),
 });
