@@ -1,0 +1,56 @@
+name: Validate OpenNext Worker
+
+on:
+  push:
+    branches:
+      - bench/opennext
+  pull_request:
+    paths:
+      - "apps/storefront/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/opennext-validation.yaml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  worker:
+    runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY: pk_test_benchmark
+      NEXT_PUBLIC_MEDUSA_BACKEND_URL: https://example.invalid
+      NEXT_PUBLIC_DEFAULT_REGION: us
+      NEXT_PUBLIC_BASE_URL: https://example.com
+      NODE_ENV: production
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Configure pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.11.1
+
+      - name: Configure Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: pnpm
+
+      - name: Install dependencies from lockfile
+        run: pnpm install --frozen-lockfile
+
+      - name: Type-check
+        run: pnpm --filter @dtc/storefront exec tsc --noEmit
+
+      - name: Lint
+        run: pnpm --filter @dtc/storefront run lint
+
+      - name: Build Cloudflare Worker
+        run: pnpm --filter @dtc/storefront run build:worker
+
+      - name: Check deployable Worker bundle
+        working-directory: apps/storefront
+        run: pnpm exec wrangler deploy --dry-run --outdir /tmp/opennext-dryrun
