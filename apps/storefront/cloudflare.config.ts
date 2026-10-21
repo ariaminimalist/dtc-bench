@@ -1,6 +1,6 @@
 import { bindings, defineConfig, defineWorker } from "cf/config";
 
-// Keep dashboard runtime variables and the custom domain represented here.
+// Keep dashboard runtime variables, Worker URLs, and custom domain represented here.
 // cf deploy treats this file as the source of truth in non-interactive builds.
 export default defineConfig({
   worker: defineWorker({
@@ -8,6 +8,8 @@ export default defineConfig({
     entrypoint: "vinext/server/fetch-handler",
     compatibilityDate: "2026-10-21",
     compatibilityFlags: ["nodejs_compat"],
+    workersDev: true,
+    previewUrls: true,
     domains: ["vinext.glam.pp.ua"],
     assets: {
       htmlHandling: "none",
