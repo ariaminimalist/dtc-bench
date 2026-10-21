@@ -1,0 +1,18 @@
+diff --git a/dist/shims/fetch-cache.js b/dist/shims/fetch-cache.js
+index 7938763d884d27e7045f34efafe50eded6524fa4..dfe6ac24f54236cd13faec97c003b8a3b2e3d61a 100644
+--- a/dist/shims/fetch-cache.js
++++ b/dist/shims/fetch-cache.js
+@@ -855,9 +855,11 @@ function createPatchedFetch() {
+ * in some environments.
+ */
+ function stripNextFromInit(init, cacheOverride) {
+-	if (!init) return cacheOverride === void 0 ? void 0 : { cache: cacheOverride };
+-	const { next: _next, _ogBody, ...rest } = init;
++	const { next: _next, _ogBody, ...rest } = init ?? {};
+ 	if (cacheOverride !== void 0) rest.cache = cacheOverride;
++	// The vinext data cache already handles force-cache. Workers native fetch
++	// only accepts no-store and no-cache; do not forward other cache modes.
++	if (rest.cache !== "no-store" && rest.cache !== "no-cache") delete rest.cache;
+ 	if (_ogBody !== void 0) rest.body = _ogBody;
+ 	return Object.keys(rest).length > 0 ? rest : void 0;
+ }
