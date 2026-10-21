@@ -1,0 +1,49 @@
+name: Storefront Validation
+
+on:
+  pull_request:
+    paths:
+      - "apps/storefront/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/storefront-validation.yaml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  storefront:
+    runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY: pk_test_benchmark
+      NEXT_PUBLIC_MEDUSA_BACKEND_URL: https://example.invalid
+      NEXT_PUBLIC_DEFAULT_REGION: us
+      NEXT_PUBLIC_BASE_URL: https://example.com
+      NODE_ENV: production
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.11.1
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: pnpm
+
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Type-check storefront
+        run: pnpm --filter @dtc/storefront exec tsc --noEmit
+
+      - name: Lint storefront
+        run: pnpm --filter @dtc/storefront run lint
+
+      - name: Build storefront
+        run: pnpm --filter @dtc/storefront run build
